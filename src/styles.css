@@ -186,3 +186,114 @@
     8px -8px,
     -8px 0px;
 }
+
+@theme inline {
+  --color-paper: var(--paper);
+  --color-paper-foreground: var(--paper-foreground);
+  --color-paper-muted: var(--paper-muted);
+  --color-selection: var(--selection);
+}
+
+:root {
+  --paper: oklch(1 0 0);
+  --paper-foreground: oklch(0.18 0.01 200);
+  --paper-muted: oklch(0.48 0.01 200);
+  --selection: oklch(0.53 0.105 192);
+}
+
+@utility exam-paper {
+  display: flex;
+  flex-direction: column;
+  flex-shrink: 0;
+  overflow: hidden;
+  padding: 48px 56px;
+  color: var(--color-paper-foreground);
+  background: var(--color-paper);
+  border-radius: 4px;
+  box-shadow: var(--shadow-lift);
+}
+
+@utility exam-header {
+  flex-shrink: 0;
+  margin-bottom: 16px;
+  padding-bottom: 10px;
+}
+
+@utility exam-header-lined {
+  border-bottom: 2px solid var(--color-paper-foreground);
+}
+
+@utility exam-blocks {
+  display: flex;
+  min-height: 0;
+  flex: 1;
+  flex-direction: column;
+  gap: 8px;
+}
+
+@utility exam-blocks-columns {
+  display: block;
+  column-count: 2;
+  column-gap: 32px;
+  column-rule: 1px solid color-mix(in oklab, var(--color-paper-foreground) 18%, transparent);
+}
+
+@utility exam-block {
+  position: relative;
+  break-inside: avoid;
+  min-height: 44px;
+  margin-bottom: 8px;
+  padding: 10px 12px;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  cursor: text;
+  transition: border-color 150ms ease, background-color 150ms ease, box-shadow 150ms ease;
+
+  &:hover {
+    border-color: color-mix(in oklab, var(--color-selection) 35%, transparent);
+  }
+}
+
+@utility exam-block-selected {
+  border-color: var(--color-selection);
+  background-color: color-mix(in oklab, var(--color-selection) 6%, var(--color-paper));
+  box-shadow: 0 0 0 2px color-mix(in oklab, var(--color-selection) 18%, transparent);
+}
+
+@utility exam-block-drop {
+  border-top: 3px solid var(--color-selection);
+}
+
+@utility exam-block-handle {
+  position: absolute;
+  top: 50%;
+  right: -27px;
+  display: flex;
+  width: 24px;
+  height: 30px;
+  align-items: center;
+  justify-content: center;
+  transform: translateY(-50%);
+  color: var(--color-paper-muted);
+  cursor: grab;
+  opacity: 0;
+  transition: opacity 150ms ease;
+
+  .exam-block:hover &,
+  .exam-block-selected & {
+    opacity: 1;
+  }
+}
+
+@utility exam-footer {
+  flex-shrink: 0;
+  margin-top: 16px;
+  padding-top: 10px;
+  text-align: center;
+  font-size: 13px;
+  line-height: 1.8;
+}
+
+@utility exam-footer-lined {
+  border-top: 1px solid var(--color-paper-foreground);
+}
