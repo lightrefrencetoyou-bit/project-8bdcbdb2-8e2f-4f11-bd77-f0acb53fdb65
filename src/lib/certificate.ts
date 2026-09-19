@@ -48,20 +48,25 @@ export function fieldValue(field: Field, row?: Record<string, string>) {
   return value !== undefined && value !== "" ? String(value) : field.text;
 }
 
-/** يرسم القالب والحقول على Canvas بأبعاد الصورة الأصلية */
+/** يرسم القالب والحقول على Canvas بأبعاد الصورة الأصلية (أو مضروبة في معامل الدقة) */
 export function drawCertificate(
   canvas: HTMLCanvasElement,
   image: HTMLImageElement | ImageBitmap,
   fields: Field[],
   row?: Record<string, string>,
+  scale = 1,
 ) {
   const w = "naturalWidth" in image ? image.naturalWidth : image.width;
   const h = "naturalHeight" in image ? image.naturalHeight : image.height;
-  canvas.width = w;
-  canvas.height = h;
+  canvas.width = Math.round(w * scale);
+  canvas.height = Math.round(h * scale);
   const ctx = canvas.getContext("2d");
   if (!ctx) return;
-  ctx.clearRect(0, 0, w, h);
+  ctx.setTransform(1, 0, 0, 1, 0, 0);
+  ctx.clearRect(0, 0, canvas.width, canvas.height);
+  ctx.scale(scale, scale);
+  ctx.imageSmoothingEnabled = true;
+  ctx.imageSmoothingQuality = "high";
   ctx.drawImage(image as CanvasImageSource, 0, 0, w, h);
   ctx.textBaseline = "middle";
   ctx.direction = "rtl";
