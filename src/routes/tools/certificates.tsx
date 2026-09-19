@@ -41,6 +41,7 @@ function SingleCertificate() {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [fields, setFields] = useState<Field[]>([newField()]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
 
   const selectedField = fields.find((f) => f.id === selected) ?? fields[0];
 
@@ -60,11 +61,11 @@ function SingleCertificate() {
   const save = async (type: "image/png" | "image/jpeg") => {
     if (!image) return;
     const canvas = document.createElement("canvas");
-    drawCertificate(canvas, image, fields);
-    const blob = await canvasToBlob(canvas, type);
+    drawCertificate(canvas, image, fields, undefined, scale);
+    const blob = await canvasToBlob(canvas, type, type === "image/jpeg" ? 0.96 : 1);
     const first = fields[0] ? fieldValue(fields[0]) : "شهادة";
     downloadBlob(blob, `${safeFileName(first)}.${type === "image/png" ? "png" : "jpg"}`);
-    toast.success("تم حفظ الشهادة");
+    toast.success(`تم حفظ الشهادة بدقة ${canvas.width}×${canvas.height}`);
   };
 
   return (
