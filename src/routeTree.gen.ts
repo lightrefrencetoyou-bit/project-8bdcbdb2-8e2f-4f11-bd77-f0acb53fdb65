@@ -20,6 +20,7 @@ import { Route as ToolsExcelCertificatesRouteImport } from './routes/tools/excel
 import { Route as ToolsFontsRouteImport } from './routes/tools/fonts'
 import { Route as ToolsImageCompressorRouteImport } from './routes/tools/image-compressor'
 import { Route as ToolsPdfRouteImport } from './routes/tools/pdf'
+import { Route as ToolsPhotoCollageRouteImport } from './routes/tools/photo-collage'
 import { Route as ApiPublicAdImageNameRouteImport } from './routes/api/public/ad-image.$name'
 import { Route as ApiPublicArticleImageNameRouteImport } from './routes/api/public/article-image.$name'
 
@@ -78,6 +79,11 @@ const ToolsPdfRoute = ToolsPdfRouteImport.update({
   path: '/tools/pdf',
   getParentRoute: () => rootRouteImport,
 } as any)
+const ToolsPhotoCollageRoute = ToolsPhotoCollageRouteImport.update({
+  id: '/tools/photo-collage',
+  path: '/tools/photo-collage',
+  getParentRoute: () => rootRouteImport,
+} as any)
 const ApiPublicAdImageNameRoute = ApiPublicAdImageNameRouteImport.update({
   id: '/api/public/ad-image/$name',
   path: '/api/public/ad-image/$name',
@@ -101,6 +107,7 @@ export interface FileRoutesByFullPath {
   '/tools/fonts': typeof ToolsFontsRoute
   '/tools/image-compressor': typeof ToolsImageCompressorRoute
   '/tools/pdf': typeof ToolsPdfRoute
+  '/tools/photo-collage': typeof ToolsPhotoCollageRoute
   '/articles/': typeof ArticlesIndexRoute
   '/api/public/ad-image/$name': typeof ApiPublicAdImageNameRoute
   '/api/public/article-image/$name': typeof ApiPublicArticleImageNameRoute
@@ -116,6 +123,7 @@ export interface FileRoutesByTo {
   '/tools/fonts': typeof ToolsFontsRoute
   '/tools/image-compressor': typeof ToolsImageCompressorRoute
   '/tools/pdf': typeof ToolsPdfRoute
+  '/tools/photo-collage': typeof ToolsPhotoCollageRoute
   '/articles': typeof ArticlesIndexRoute
   '/api/public/ad-image/$name': typeof ApiPublicAdImageNameRoute
   '/api/public/article-image/$name': typeof ApiPublicArticleImageNameRoute
@@ -132,6 +140,7 @@ export interface FileRoutesById {
   '/tools/fonts': typeof ToolsFontsRoute
   '/tools/image-compressor': typeof ToolsImageCompressorRoute
   '/tools/pdf': typeof ToolsPdfRoute
+  '/tools/photo-collage': typeof ToolsPhotoCollageRoute
   '/articles/': typeof ArticlesIndexRoute
   '/api/public/ad-image/$name': typeof ApiPublicAdImageNameRoute
   '/api/public/article-image/$name': typeof ApiPublicArticleImageNameRoute
@@ -149,6 +158,7 @@ export interface FileRouteTypes {
     | '/tools/fonts'
     | '/tools/image-compressor'
     | '/tools/pdf'
+    | '/tools/photo-collage'
     | '/articles/'
     | '/api/public/ad-image/$name'
     | '/api/public/article-image/$name'
@@ -164,6 +174,7 @@ export interface FileRouteTypes {
     | '/tools/fonts'
     | '/tools/image-compressor'
     | '/tools/pdf'
+    | '/tools/photo-collage'
     | '/articles'
     | '/api/public/ad-image/$name'
     | '/api/public/article-image/$name'
@@ -179,6 +190,7 @@ export interface FileRouteTypes {
     | '/tools/fonts'
     | '/tools/image-compressor'
     | '/tools/pdf'
+    | '/tools/photo-collage'
     | '/articles/'
     | '/api/public/ad-image/$name'
     | '/api/public/article-image/$name'
@@ -195,6 +207,7 @@ export interface RootRouteChildren {
   ToolsFontsRoute: typeof ToolsFontsRoute
   ToolsImageCompressorRoute: typeof ToolsImageCompressorRoute
   ToolsPdfRoute: typeof ToolsPdfRoute
+  ToolsPhotoCollageRoute: typeof ToolsPhotoCollageRoute
   ArticlesIndexRoute: typeof ArticlesIndexRoute
   ApiPublicAdImageNameRoute: typeof ApiPublicAdImageNameRoute
   ApiPublicArticleImageNameRoute: typeof ApiPublicArticleImageNameRoute
@@ -279,6 +292,13 @@ declare module '@tanstack/react-router' {
       preLoaderRoute: typeof ToolsPdfRouteImport
       parentRoute: typeof rootRouteImport
     }
+    '/tools/photo-collage': {
+      id: '/tools/photo-collage'
+      path: '/tools/photo-collage'
+      fullPath: '/tools/photo-collage'
+      preLoaderRoute: typeof ToolsPhotoCollageRouteImport
+      parentRoute: typeof rootRouteImport
+    }
     '/api/public/ad-image/$name': {
       id: '/api/public/ad-image/$name'
       path: '/api/public/ad-image/$name'
@@ -307,6 +327,7 @@ const rootRouteChildren: RootRouteChildren = {
   ToolsFontsRoute: ToolsFontsRoute,
   ToolsImageCompressorRoute: ToolsImageCompressorRoute,
   ToolsPdfRoute: ToolsPdfRoute,
+  ToolsPhotoCollageRoute: ToolsPhotoCollageRoute,
   ArticlesIndexRoute: ArticlesIndexRoute,
   ApiPublicAdImageNameRoute: ApiPublicAdImageNameRoute,
   ApiPublicArticleImageNameRoute: ApiPublicArticleImageNameRoute,

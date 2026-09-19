@@ -41,6 +41,7 @@ function SingleCertificate() {
   const [image, setImage] = useState<HTMLImageElement | null>(null);
   const [fields, setFields] = useState<Field[]>([newField()]);
   const [selected, setSelected] = useState<string | null>(null);
+  const [scale, setScale] = useState(1);
 
   const selectedField = fields.find((f) => f.id === selected) ?? fields[0];
 
@@ -60,11 +61,11 @@ function SingleCertificate() {
   const save = async (type: "image/png" | "image/jpeg") => {
     if (!image) return;
     const canvas = document.createElement("canvas");
-    drawCertificate(canvas, image, fields);
-    const blob = await canvasToBlob(canvas, type);
+    drawCertificate(canvas, image, fields, undefined, scale);
+    const blob = await canvasToBlob(canvas, type, type === "image/jpeg" ? 0.96 : 1);
     const first = fields[0] ? fieldValue(fields[0]) : "شهادة";
     downloadBlob(blob, `${safeFileName(first)}.${type === "image/png" ? "png" : "jpg"}`);
-    toast.success("تم حفظ الشهادة");
+    toast.success(`تم حفظ الشهادة بدقة ${canvas.width}×${canvas.height}`);
   };
 
   return (
@@ -105,7 +106,22 @@ function SingleCertificate() {
               <Button variant="ghost" asChild>
                 <Link to="/tools/excel-certificates">شهادات جماعية من Excel</Link>
               </Button>
+              <select
+                value={scale}
+                onChange={(e) => setScale(Number(e.target.value))}
+                className="h-10 rounded-lg border border-border bg-background px-2 text-sm"
+                aria-label="دقة الحفظ"
+              >
+                <option value={1}>دقة القالب الأصلية</option>
+                <option value={1.5}>دقة عالية ×1.5</option>
+                <option value={2}>دقة عالية جداً ×2</option>
+                <option value={3}>دقة طباعة ×3</option>
+              </select>
             </div>
+            <p className="text-xs text-muted-foreground">
+              الحفظ بدقة {Math.round((image?.naturalWidth ?? 0) * scale)}×
+              {Math.round((image?.naturalHeight ?? 0) * scale)} بكسل.
+            </p>
           </div>
 
           <div className="surface grid h-fit gap-5 p-5">

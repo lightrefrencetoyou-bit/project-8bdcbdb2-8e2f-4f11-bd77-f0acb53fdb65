@@ -1,0 +1,362 @@
+import { createFileRoute } from "@tanstack/react-router";
+import { ArrowRight, ArrowLeft, Download, Images, Trash2 } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+import { toast } from "sonner";
+
+import { PageHeader } from "../../components/PrivacyNote";
+import { UploadZone } from "../../components/UploadZone";
+import { Button } from "../../components/ui/button";
+import { Label } from "../../components/ui/label";
+import { canvasToBlob, loadImageFromFile, uid } from "../../lib/certificate";
+import {
+  COLLAGE_TEMPLATES,
+  QUALITIES,
+  RATIOS,
+  renderCollage,
+  type Anchor,
+  type CollageItem,
+  type Fit,
+} from "../../lib/collage";
+import { downloadBlob } from "../../lib/save";
+
+export const Route = createFileRoute("/tools/photo-collage")({
+  head: () => ({
+    meta: [
+      { title: "تجميع الصور في قوالب — منصة الأستاذ" },
+      {
+        name: "description",
+        content:
+          "اجمع عدة صور في قالب واحد، حدّد المحاذاة والتكبير والفواصل، ثم صدّر الصورة بدقة عالية تصل إلى 6000 بكسل.",
+      },
+      { property: "og:type", content: "website" },
+      { name: "twitter:card", content: "summary_large_image" },
+      { property: "og:title", content: "تجميع الصور في قوالب — منصة الأستاذ" },
+      {
+        property: "og:description",
+        content: "قوالب جاهزة لتجميع الصور ومحاذاتها وتصديرها بدقة عالية داخل متصفحك.",
+      },
+    ],
+  }),
+  component: PhotoCollage,
+});
+
+const ANCHORS: { id: Anchor; name: string }[] = [
+  { id: "center", name: "الوسط" },
+  { id: "top", name: "الأعلى" },
+  { id: "bottom", name: "الأسفل" },
+  { id: "start", name: "اليمين" },
+  { id: "end", name: "اليسار" },
+];
+
+function PhotoCollage() {
+  const [items, setItems] = useState<CollageItem[]>([]);
+  const [templateId, setTemplateId] = useState("grid-2x2");
+  const [ratioId, setRatioId] = useState<string>("1-1");
+  const [qualityId, setQualityId] = useState<string>("print");
+  const [customWidth, setCustomWidth] = useState(3000);
+  const [useCustom, setUseCustom] = useState(false);
+  const [gap, setGap] = useState(0.012);
+  const [padding, setPadding] = useState(0.02);
+  const [radius, setRadius] = useState(0.01);
+  const [background, setBackground] = useState("#ffffff");
+  const [busy, setBusy] = useState(false);
+  const canvasRef = useRef<HTMLCanvasElement>(null);
+
+  const template = COLLAGE_TEMPLATES.find((t) => t.id === templateId) ?? COLLAGE_TEMPLATES[0]!;
+  const ratio = RATIOS.find((r) => r.id === ratioId)?.value ?? 1;
+  const exportWidth = useCustom
+    ? Math.min(8000, Math.max(600, Math.round(customWidth)))
+    : (QUALITIES.find((q) => q.id === qualityId)?.width ?? 3000);
+
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    renderCollage(canvas, {
+      width: 1000,
+      ratio,
+      template,
+      items,
+      gap,
+      padding,
+      radius,
+      background,
+    });
+  }, [items, template, ratio, gap, padding, radius, background]);
+
+  const onFiles = async (files: File[]) => {
+    try {
+      const loaded = await Promise.all(
+        files.map(async (file) => {
+          const image = await loadImageFromFile(file);
+          return {
+            id: uid(),
+            name: file.name,
+            image,
+            fit: "cover" as Fit,
+            anchor: "center" as Anchor,
+            zoom: 1,
+          };
+        }),
+      );
+      setItems((prev) => [...prev, ...loaded]);
+      toast.success(`أُضيفت ${loaded.length} صورة`);
+    } catch {
+      toast.error("تعذر قراءة بعض الصور");
+    }
+  };
+
+  const patch = (id: string, p: Partial<CollageItem>) =>
+    setItems((prev) => prev.map((item) => (item.id === id ? { ...item, ...p } : item)));
+
+  const move = (index: number, dir: -1 | 1) =>
+    setItems((prev) => {
+      const next = [...prev];
+      const target = index + dir;
+      if (target < 0 || target >= next.length) return prev;
+      [next[index], next[target]] = [next[target]!, next[index]!];
+      return next;
+    });
+
+  const exportImage = async (type: "image/png" | "image/jpeg") => {
+    if (!items.length) {
+      toast.error("أضف صورة واحدة على الأقل");
+      return;
+    }
+    setBusy(true);
+    try {
+      const canvas = document.createElement("canvas");
+      renderCollage(canvas, {
+        width: exportWidth,
+        ratio,
+        template,
+        items,
+        gap,
+        padding,
+        radius,
+        background,
+      });
+      const blob = await canvasToBlob(canvas, type, type === "image/jpeg" ? 0.96 : 1);
+      downloadBlob(blob, `تجميع-صور-${canvas.width}x${canvas.height}.${type === "image/png" ? "png" : "jpg"}`);
+      toast.success(`تم التصدير بدقة ${canvas.width}×${canvas.height}`);
+    } catch {
+      toast.error("تعذر تصدير الصورة");
+    } finally {
+      setBusy(false);
+    }
+  };
+
+  return (
+    <div className="mx-auto grid w-full max-w-6xl gap-8 px-4 py-10">
+      <PageHeader
+        icon={<Images className="size-6" />}
+        title="تجميع الصور"
+        description="اختر قالباً، أضف صورك، اضبط المحاذاة والتكبير والفواصل، ثم صدّر بدقة عالية أو مخصصة."
+      />
+
+      <UploadZone
+        accept="image/*"
+        multiple
+        title="أضف الصور (يمكن اختيار عدة صور)"
+        hint="PNG · JPG · WebP — تُرتّب الصور حسب خانات القالب"
+        onFiles={onFiles}
+      />
+
+      <div className="grid gap-6 lg:grid-cols-[1.4fr_1fr]">
+        <div className="grid gap-3">
+          <div className="surface overflow-hidden p-3">
+            <canvas ref={canvasRef} className="mx-auto block h-auto w-full rounded-lg" />
+          </div>
+          <div className="flex flex-wrap gap-2">
+            <Button onClick={() => exportImage("image/png")} disabled={busy}>
+              <Download className="size-4" /> تصدير PNG
+            </Button>
+            <Button variant="outline" onClick={() => exportImage("image/jpeg")} disabled={busy}>
+              <Download className="size-4" /> تصدير JPG
+            </Button>
+            {items.length > 0 && (
+              <Button variant="ghost" onClick={() => setItems([])}>
+                تفريغ الصور
+              </Button>
+            )}
+          </div>
+          <p className="text-xs text-muted-foreground">
+            دقة التصدير الحالية: {exportWidth}×{Math.round(exportWidth / ratio)} بكسل — خانات القالب:{" "}
+            {template.cells.length} / الصور المضافة: {items.length}
+          </p>
+        </div>
+
+        <div className="surface grid h-fit gap-5 p-5">
+          <div className="grid gap-2">
+            <Label>القالب</Label>
+            <div className="grid grid-cols-2 gap-2">
+              {COLLAGE_TEMPLATES.map((t) => (
+                <Button
+                  key={t.id}
+                  size="sm"
+                  variant={t.id === templateId ? "default" : "outline"}
+                  onClick={() => setTemplateId(t.id)}
+                >
+                  {t.name}
+                </Button>
+              ))}
+            </div>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>أبعاد الورقة</Label>
+            <select
+              value={ratioId}
+              onChange={(e) => setRatioId(e.target.value)}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+            >
+              {RATIOS.map((r) => (
+                <option key={r.id} value={r.id}>
+                  {r.name}
+                </option>
+              ))}
+            </select>
+          </div>
+
+          <div className="grid gap-2">
+            <Label>دقة التصدير</Label>
+            <select
+              value={useCustom ? "custom" : qualityId}
+              onChange={(e) => {
+                if (e.target.value === "custom") setUseCustom(true);
+                else {
+                  setUseCustom(false);
+                  setQualityId(e.target.value);
+                }
+              }}
+              className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+            >
+              {QUALITIES.map((q) => (
+                <option key={q.id} value={q.id}>
+                  {q.name}
+                </option>
+              ))}
+              <option value="custom">دقة مخصصة…</option>
+            </select>
+            {useCustom && (
+              <input
+                type="number"
+                min={600}
+                max={8000}
+                step={100}
+                value={customWidth}
+                onChange={(e) => setCustomWidth(Number(e.target.value))}
+                className="h-11 rounded-xl border border-border bg-background px-3 text-sm"
+                dir="ltr"
+              />
+            )}
+          </div>
+
+          <div className="grid gap-3">
+            <Label>الفراغ بين الصور: {(gap * 100).toFixed(1)}%</Label>
+            <input
+              type="range"
+              min={0}
+              max={0.06}
+              step={0.002}
+              value={gap}
+              onChange={(e) => setGap(Number(e.target.value))}
+            />
+            <Label>الحاشية الخارجية: {(padding * 100).toFixed(1)}%</Label>
+            <input
+              type="range"
+              min={0}
+              max={0.08}
+              step={0.002}
+              value={padding}
+              onChange={(e) => setPadding(Number(e.target.value))}
+            />
+            <Label>تدوير الزوايا: {(radius * 100).toFixed(1)}%</Label>
+            <input
+              type="range"
+              min={0}
+              max={0.06}
+              step={0.002}
+              value={radius}
+              onChange={(e) => setRadius(Number(e.target.value))}
+            />
+            <Label>لون الخلفية</Label>
+            <input
+              type="color"
+              value={background}
+              onChange={(e) => setBackground(e.target.value)}
+              className="h-10 w-full rounded-lg border border-border bg-background"
+            />
+          </div>
+        </div>
+      </div>
+
+      {items.length > 0 && (
+        <section className="grid gap-3">
+          <h2 className="font-display font-bold">الصور وترتيبها</h2>
+          {items.map((item, index) => (
+            <div key={item.id} className="surface grid gap-3 p-4 sm:grid-cols-[96px_1fr]">
+              <img
+                src={item.image.src}
+                alt={item.name}
+                className="h-24 w-full rounded-lg object-cover"
+              />
+              <div className="grid gap-2">
+                <span className="truncate text-sm font-medium">
+                  {index + 1}. {item.name}
+                  {index >= template.cells.length && (
+                    <span className="text-xs text-muted-foreground"> — خارج القالب الحالي</span>
+                  )}
+                </span>
+                <div className="flex flex-wrap items-center gap-2">
+                  <select
+                    value={item.fit}
+                    onChange={(e) => patch(item.id, { fit: e.target.value as Fit })}
+                    className="h-10 rounded-lg border border-border bg-background px-2 text-sm"
+                  >
+                    <option value="cover">تعبئة الخانة</option>
+                    <option value="contain">إظهار الصورة كاملة</option>
+                  </select>
+                  <select
+                    value={item.anchor}
+                    onChange={(e) => patch(item.id, { anchor: e.target.value as Anchor })}
+                    className="h-10 rounded-lg border border-border bg-background px-2 text-sm"
+                  >
+                    {ANCHORS.map((a) => (
+                      <option key={a.id} value={a.id}>
+                        محاذاة: {a.name}
+                      </option>
+                    ))}
+                  </select>
+                  <label className="flex items-center gap-2 text-xs text-muted-foreground">
+                    تكبير {item.zoom.toFixed(2)}×
+                    <input
+                      type="range"
+                      min={1}
+                      max={2.5}
+                      step={0.05}
+                      value={item.zoom}
+                      onChange={(e) => patch(item.id, { zoom: Number(e.target.value) })}
+                    />
+                  </label>
+                  <Button variant="outline" size="sm" onClick={() => move(index, -1)}>
+                    <ArrowRight className="size-4" />
+                  </Button>
+                  <Button variant="outline" size="sm" onClick={() => move(index, 1)}>
+                    <ArrowLeft className="size-4" />
+                  </Button>
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => setItems((prev) => prev.filter((i) => i.id !== item.id))}
+                  >
+                    <Trash2 className="size-4" /> حذف
+                  </Button>
+                </div>
+              </div>
+            </div>
+          ))}
+        </section>
+      )}
+    </div>
+  );
+}
